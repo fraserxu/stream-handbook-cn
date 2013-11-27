@@ -1,6 +1,6 @@
 # 简介
 
-[译者注:]本文翻译至[@substack](https://github.com/substack/stream-handbook)
+[译者注:]本文翻译至[@substack](https://github.com/substack) - [stream-handbook](https://github.com/substack/stream-handbook)
 
 本文主要介绍如何使用[streams](http://nodejs.org/docs/latest/api/stream.html)来编写[node.js](http://nodejs.org/)应用.
 
