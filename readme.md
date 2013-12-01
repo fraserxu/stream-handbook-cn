@@ -81,4 +81,92 @@ server.listen(8000);
 
 stream的存在,让使用node编程更加的简单,优雅,并且有利于代码的组件化.
 
+# 基础
+
+主要有5种类型的stream: readable(可读), writable(可写), transform(可转), duplex(可逆)以及"classic".
+
+## pipe
+
+所有类型的stream都是用`.pipe()`来匹配数据的写入与输出.
+
+`.pipe()`函数接受readable(可读)的源stream `src`并连接输出到目标 writable(可写) stream `dst`中:
+
+```
+src.pipe(dst)
+```
+
+`.pipe(dst)` 返回 `dst` ,便于连接多个不同的 `.pipe()` 函数:
+
+``` js
+a.pipe(b).pipe(c).pipe(d)
+```
+这种写法类似与:
+
+``` js
+a.pipe(b);
+b.pipe(c);
+c.pipe(d);
+```
+
+这和你通常在命令行或者终端中使用pipe一样:
+
+```
+a | b | c | d
+```
+
+区别在于你是在node中而不是终端里!
+
+## readable streams 可读stream
+
+Readable stream产生数据,可以通过调用 `.pipe()` 传入到writable, transform或者duplex stream中去:
+
+``` js
+readableStream.pipe(dst)
+```
+
+### 创建readable stream
+
+``` js
+var Readable = require('stream').Readable;
+
+var rs = new Readable;
+rs.push('beep ');
+rs.push('boop\n');
+rs.push(null);
+
+rs.pipe(process.stdout);
+```
+
+```
+$ node read0.js
+beep boop
+```
+
+`rs.push(null)` 告诉stream使用者 `rs` 已经完成输出数据.
+
+这里要注意的是我们在把数据pipe到 `process.stdout` 之前就已经将内容添加到readable stream当中,但是仍然的到的是完整的信息.
+
+这是因为在 `.push()` 数据到readable stream时,所产生的数据被添加到buffer中,直到stream使用者需要时才会被读取.
+
+然而,在很多时候我们都是希望仅仅在stream使用者真正需要时才产生数据,从而避免数据被buffer到一起.
+
+我们可以通过定义一个 `._read` 函数来按需推送数据:
+
+``` js
+var Readable = require('stream').Readable;
+var rs = Readable();
+
+var c = 97;
+rs._read = function () {
+  rs.push(String.fromCharCode(c++));
+  if (c > 'z'.charCodeAt(0)) rs.push(null);
+};
+
+rs.pipe(process.stdout);
+```
+
+```
+$ node read1.js
+abcdefghijklmnopqrstuvwxyz
+```
 
