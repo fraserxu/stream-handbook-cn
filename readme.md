@@ -75,7 +75,7 @@ var server = http.createServer(function (req, res) {
 server.listen(8000);
 ```
 
-现在读取的文件已经可以被支持gzip的浏览器所使用![oppressor](https://github.com/substack/oppressor)可以自动帮我们解决转码的问题.
+现在读取的文件已经可以被支持gzip的浏览器所使用! [oppressor](https://github.com/substack/oppressor)可以自动帮我们解决转码的问题.
 
 在你学习并且理解了stream的api之后,你就可以像使用乐高积木一样随心所欲的使用各个stream模块,从而可以避免强迫自己去记那些不是使用stream模块的各种奇怪的api.
 
