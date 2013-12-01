@@ -169,4 +169,56 @@ rs.pipe(process.stdout);
 $ node read1.js
 abcdefghijklmnopqrstuvwxyz
 ```
+现在我们只会在使用者准备好读取时才会将字母 `'a'` 到 `'z'` push到数组中.
+
+`_read` 函数同时接受一个 `size` 作为参数,用于定义使用者希望读取的字节数,但是readable stream可以根据自己需求选择忽略 `size` 参数.
+
+值得注意的是,你可以通过使用 `util.inherits()` 方法创建一个子stream类,但是这种方式不太适用于比较复杂的场景.
+
+为了证明 `_read` 函数只在使用者请求时才被调用,我们可以稍微修改一下刚才的代码:
+
+```
+var Readable = require('stream').Readable;
+var rs = Readable();
+
+var c = 97 -1;
+
+rs._read = function () {
+  if (c >= 'z'.charCodeAt(0)) return rs.push(null);
+
+  setTimeout(function() {
+    rs.push(Sting.fromCharCode(++c));
+  }, 100);
+};
+
+rs.pipe(process.stdout);
+
+process.on('exit', function () {
+  console.error('\n_read() called ' + (c - 97) + ' times');
+});
+
+process.stdout.on('error', process.exit);
+```
+
+运行这段代码,我们会发现当我们只请求5字节的输出时 `_read()` 只被调用了5次.
+
+```
+$ node read2.js | head -c5
+abcde
+_read() called 5 times
+```
+
+因为操作系统需要一定的时间来发送相关指令去关闭pipe,所以这里使用setTimeout来设置延迟是很有必要的.
+
+The `process.stdout.on('error', fn)` handler is also necessary because the
+operating system will send a SIGPIPE to our process when `head` is no longer
+interested in our program's output, which gets emitted as an EPIPE error on
+`process.stdout`.
+
+这些额外的复杂操作在使用操作系统外部的pipe时很有必要,但是如果我们一直使用node的stream,这些问题都会被自动处理.
+
+如果你需要创建一个字符串或者对象以外的任意类型值的readable stream,切记使用 `Readable({ objectMode: true})`.
+
+### 使用readable stream
+
 
