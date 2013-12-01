@@ -61,3 +61,24 @@ server.listen(8000);
 
 使用`.pipe()`还有一些其他好处.例如在处理backpressure时,针对慢速连接用户,可以控制buffer从而避免将过度的buffer写入用户的内存.
 
+如果你想对数据进行压缩,也有对应的streaming模块来实现.
+
+``` js
+var http = require('http');
+var fs = require('fs');
+var oppressor = require('oppressor');
+
+var server = http.createServer(function (req, res) {
+  var stream = fs.createReadStream(__dirname + '/data.txt');
+  stream.pipe(oppressor(req)).pipe(res);
+});
+server.listen(8000);
+```
+
+现在读取的文件已经可以被支持gzip的浏览器所使用![oppressor](https://github.com/substack/oppressor)可以自动帮我们解决转码的问题.
+
+在你学习并且理解了stream的api之后,你就可以像使用乐高积木一样随心所欲的使用各个stream模块,从而可以避免强迫自己去记那些不是使用stream模块的各种奇怪的api.
+
+stream的存在,让使用node编程更加的简单,优雅,并且有利于代码的组件化.
+
+
