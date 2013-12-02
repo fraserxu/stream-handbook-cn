@@ -116,7 +116,7 @@ a | b | c | d
 
 区别在于你是在node中而不是终端里!
 
-## readable streams 可读stream
+## readable streams
 
 Readable stream产生数据,可以通过调用 `.pipe()` 传入到writable, transform或者duplex stream中去:
 
