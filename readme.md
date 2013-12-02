@@ -221,4 +221,102 @@ interested in our program's output, which gets emitted as an EPIPE error on
 
 ### 使用readable stream
 
+大部分情况下将readable stream pipe到其他类型的stream会相对容易一些,或者也可以传入到一些其他模块生成的stream中,例如[through](https://npmjs.org/package/through)或者[concat-stream](https://npmjs.org/package/concat-stream). 但是也不排除在某些场景下也可能会需要直接使用readable stream.
 
+``` js
+process.stdin.on('readable', function () {
+  var buf = process.stdin.read();
+  console.dir(buf);
+});
+```
+
+```
+$ (echo abc; sleep 1; echo def; sleep 1; echo ghi) | node consume0.js
+<Buffer 61 62 63 0a>
+<Buffer 64 65 66 0a>
+<Buffer 67 68 69 0a>
+null
+```
+
+在有可供使用的数据时 `'readable'`时间就会被触发,可以通过 `.read()` 方法从buffer中读取数据.
+
+stream完成之后, `.read()` 方法会因为没有更多的数据而返回 `null`.
+
+你也可以通过传入参数来设置返回的数据大小.这样做一般不推荐,因为它不适用于object stream, 但是所有的核心stream都支持这种写法.
+
+以下例子使用 `.read(n)` 方法将buffer分为3个字节来输出:
+
+``` js
+process.stdin.on('readable', function () {
+  var buf = process.stdin.read(3);
+  console.dir(buf);
+});
+```
+
+运行这段代码你会发现数据没有被完整的返回!
+
+```
+$ (echo abc; sleep 1; echo def; sleep 1; echo ghi) | node consume1.js
+<Buffer 61 62 63>
+<Buffer 0a 64 65>
+<Buffer 66 0a 67>
+```
+
+这是因为在内部buffer中已经没有额外的剩余数据,我们需要告诉node我们需要读取剩余的已经读取的数据.可以简单的调用 `.read(0)` :
+
+``` js
+process.stdin.on('readable', function () {
+  var buf = process.stdin.read(3);
+  console.dir(buf);
+  process.stdin.read(0);
+});
+```
+
+现在数据可以按照我们想要的方式正常返回了.
+
+``` js
+$ (echo abc; sleep 1; echo def; sleep 1; echo ghi) | node consume2.js
+<Buffer 61 62 63>
+<Buffer 0a 64 65>
+<Buffer 66 0a 67>
+<Buffer 68 69 0a>
+```
+
+你也可以使用 `.unshift()` 在 `.read()` 方法返回给你多余的数据是按照相同的逻辑来进行处理.
+
+使用 `.unshift()` 方法可以防止产生多余的buffer. 我们可以构造一个readable的解析器来将数据分行:
+
+``` js
+var offset = 0;
+
+process.stdin.on('readable', function () {
+  var buf = process.stdin.read();
+  if (!buf) return;
+  for (; offset < buf.length; offset++) {
+    if (buf[offset] === 0x0a) {
+      console.dir(buf.slice(0, offset).toString());
+      buf = buf.slice(offset + 1);
+      offset = 0;
+      process.stdin.unshift(buf);
+      return;
+    }
+  }
+  process.stdin.unshift(buf);
+});
+```
+
+```
+$ tail -n +50000 /usr/share/dict/american-english | head -n10 | node lines.js
+'hearties'
+'heartiest'
+'heartily'
+'heartiness'
+'heartiness\'s'
+'heartland'
+'heartland\'s'
+'heartlands'
+'heartless'
+'heartlessly'
+```
+
+然而,在npm上已经有了一些模块可以去完成这件事情,例如[split](https://npmjs.org/package/split).
